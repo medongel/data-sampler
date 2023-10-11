@@ -1,0 +1,73 @@
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+
+plugins {
+    id 'java'
+    id 'se.thinkcode.cucumber-runner' version '0.0.8'
+}
+
+ext {
+    junitVersion = '5.7.2'
+    cucumberVersion = '6.10.4'
+    restAssuredVersion = '5.3.2'
+    wiremockVersion = '2.21.0'
+
+}
+
+
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    testImplementation 'io.rest-assured:rest-assured:5.3.2'
+    testImplementation "io.cucumber:cucumber-java:${cucumberVersion}"
+    testImplementation "io.rest-assured:json-path:${restAssuredVersion}"
+    testImplementation "com.github.tomakehurst:wiremock:${wiremockVersion}"
+
+    testImplementation "io.cucumber:cucumber-junit:${cucumberVersion}"
+    testImplementation "org.junit.vintage:junit-vintage-engine:${junitVersion}"
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+task cucumberCli() {
+    dependsOn assemble, testClasses
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = [
+                    '--plugin', 'pretty',
+                    '--plugin', 'html:target/cucumber-report.html',
+                    '--glue', 'com.baeldung.cucumber',
+                    'src/test/resources']
+        }
+    }
+}
+
+cucumber {
+    main = 'io.cucumber.core.cli.Main'
+
+}
+
+test {
+    testLogging {
+        events TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED
+    }
+
+    systemProperties(project.gradle.startParameter.systemPropertiesArgs)
+    useJUnitPlatform()
+}
